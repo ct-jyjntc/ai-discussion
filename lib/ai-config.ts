@@ -1,4 +1,5 @@
 // AI配置管理模块
+import { getEnvConfig } from './env-validation'
 
 export interface AIConfig {
   apiUrl: string
@@ -8,29 +9,71 @@ export interface AIConfig {
   personality: string
 }
 
-export const AI_A_CONFIG: AIConfig = {
-  apiUrl: process.env.AI_A_API_URL || "http://31.22.111.51:8000/hf/v1/chat/completions",
-  apiKey: process.env.AI_A_API_KEY || "a2366021253",
-  model: process.env.AI_A_MODEL || "gemini-2.5-flash-preview-05-20",
-  name: process.env.AI_A_NAME || "AI助手A",
-  personality: process.env.AI_A_PERSONALITY || "analytical,logical,methodical"
+// 延迟初始化配置（仅在服务器端调用时）
+function getAIConfigs() {
+  const ENV_CONFIG = getEnvConfig()
+  
+  return {
+    AI_A_CONFIG: {
+      apiUrl: ENV_CONFIG.AI_A_API_URL,
+      apiKey: ENV_CONFIG.AI_A_API_KEY,
+      model: ENV_CONFIG.AI_A_MODEL,
+      name: ENV_CONFIG.AI_A_NAME,
+      personality: ENV_CONFIG.AI_A_PERSONALITY
+    } as AIConfig,
+    
+    AI_B_CONFIG: {
+      apiUrl: ENV_CONFIG.AI_B_API_URL,
+      apiKey: ENV_CONFIG.AI_B_API_KEY,
+      model: ENV_CONFIG.AI_B_MODEL,
+      name: ENV_CONFIG.AI_B_NAME,
+      personality: ENV_CONFIG.AI_B_PERSONALITY
+    } as AIConfig,
+    
+    CONSENSUS_CONFIG: {
+      apiUrl: ENV_CONFIG.CONSENSUS_API_URL,
+      apiKey: ENV_CONFIG.CONSENSUS_API_KEY,
+      model: ENV_CONFIG.CONSENSUS_MODEL,
+      name: "共识生成器",
+      personality: "objective,balanced,comprehensive"
+    } as AIConfig
+  }
 }
 
-export const AI_B_CONFIG: AIConfig = {
-  apiUrl: process.env.AI_B_API_URL || "http://31.22.111.51:8000/hf/v1/chat/completions",
-  apiKey: process.env.AI_B_API_KEY || "a2366021253",
-  model: process.env.AI_B_MODEL || "gemini-2.5-flash-preview-05-20",
-  name: process.env.AI_B_NAME || "AI助手B",
-  personality: process.env.AI_B_PERSONALITY || "creative,critical,questioning"
+// 导出获取配置的函数
+export function getAIConfig(type: 'ai_a' | 'ai_b' | 'consensus'): AIConfig {
+  const configs = getAIConfigs()
+  switch (type) {
+    case 'ai_a':
+      return configs.AI_A_CONFIG
+    case 'ai_b':
+      return configs.AI_B_CONFIG
+    case 'consensus':
+      return configs.CONSENSUS_CONFIG
+  }
 }
 
-export const CONSENSUS_CONFIG: AIConfig = {
-  apiUrl: process.env.CONSENSUS_API_URL || "http://31.22.111.51:8000/hf/v1/chat/completions",
-  apiKey: process.env.CONSENSUS_API_KEY || "a2366021253",
-  model: process.env.CONSENSUS_MODEL || "gemini-2.5-flash-preview-05-20",
-  name: "共识生成器",
-  personality: "objective,balanced,comprehensive"
-}
+// 为了向后兼容，保留原来的导出方式（仅在服务器端可用）
+export const AI_A_CONFIG = new Proxy({} as AIConfig, {
+  get(target, prop) {
+    const config = getAIConfig('ai_a')
+    return (config as any)[prop]
+  }
+})
+
+export const AI_B_CONFIG = new Proxy({} as AIConfig, {
+  get(target, prop) {
+    const config = getAIConfig('ai_b')
+    return (config as any)[prop]
+  }
+})
+
+export const CONSENSUS_CONFIG = new Proxy({} as AIConfig, {
+  get(target, prop) {
+    const config = getAIConfig('consensus')
+    return (config as any)[prop]
+  }
+})
 
 // 个性化系统提示词生成器
 export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | 'consensus', round: number): string {

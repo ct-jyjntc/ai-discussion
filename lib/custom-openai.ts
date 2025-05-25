@@ -1,28 +1,42 @@
 import { createOpenAI } from "@ai-sdk/openai"
+import { getEnvConfig } from './env-validation'
 
-// OpenAI Compatible API Configuration
-// API: http://31.22.111.51:8000/hf/v1/chat/completions
-// Model: gemini-2.5-flash-preview-05-20
-// API Key: a2366021253 (stored in .env.local)
-export const customOpenAI = createOpenAI({
-  apiKey: process.env.CUSTOM_API_KEY!,
-  baseURL: "http://31.22.111.51:8000/hf/v1",
-  compatibility: "compatible", // OpenAI compatible mode
-})
+// OpenAI Compatible API Configuration - 从环境变量读取（延迟初始化）
+function getCustomOpenAI() {
+  const ENV_CONFIG = getEnvConfig()
+  return createOpenAI({
+    apiKey: ENV_CONFIG.AI_A_API_KEY,
+    baseURL: ENV_CONFIG.AI_A_API_URL.replace('/chat/completions', ''),
+    compatibility: "compatible", // OpenAI compatible mode
+  })
+}
 
-export const model = customOpenAI("gemini-2.5-flash-preview-05-20")
+function getModel() {
+  const ENV_CONFIG = getEnvConfig()
+  return getCustomOpenAI()(ENV_CONFIG.AI_A_MODEL)
+}
+
+// 导出延迟初始化的函数
+export function getCustomOpenAIInstance() {
+  return getCustomOpenAI()
+}
+
+export function getCustomModel() {
+  return getModel()
+}
 
 // Alternative: Direct fetch approach for testing
 export async function testAPIConnection() {
   try {
-    const response = await fetch("http://31.22.111.51:8000/hf/v1/chat/completions", {
+    const ENV_CONFIG = getEnvConfig()
+    const response = await fetch(ENV_CONFIG.AI_A_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer a2366021253`,
+        Authorization: `Bearer ${ENV_CONFIG.AI_A_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gemini-2.5-flash-preview-05-20",
+        model: ENV_CONFIG.AI_A_MODEL,
         messages: [
           {
             role: "user",

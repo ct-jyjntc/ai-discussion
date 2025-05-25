@@ -14,12 +14,13 @@ import {
 import { AIConfigPanel } from "./ai-config-panel"
 import type { ConversationState, Message } from "@/types/conversation"
 import { testAPI } from "@/actions/ai-conversation-v2"
+import { quickAPITest } from "@/actions/api-test"
 import {
   analyzeQuestionStreaming,
   aiDiscussionStreaming,
   continueDiscussionStreaming,
   generateConsensusAnswerStreaming
-} from "@/lib/streaming-api"
+} from "@/actions/streaming-actions"
 import {
   Loader2,
   Send,
@@ -231,20 +232,18 @@ export function ConversationFlowClean() {
       let aiAResponse: string
 
       if (round === 1) {
-        aiAResponse = await analyzeQuestionStreaming(
-          originalQuestion, 
-          round,
-          (chunk, isComplete) => updateStreamingMessage(aiAMessage.id, chunk, isComplete)
-        )
+        aiAResponse = await analyzeQuestionStreaming(originalQuestion, round)
       } else {
         aiAResponse = await continueDiscussionStreaming(
           originalQuestion,
           fullDiscussion,
           round,
-          true,
-          (chunk, isComplete) => updateStreamingMessage(aiAMessage.id, chunk, isComplete)
+          true
         )
       }
+      
+      // 直接更新消息内容
+      updateStreamingMessage(aiAMessage.id, aiAResponse, true)
 
       const newDiscussion = fullDiscussion + `\n\n【AI助手A - 第${round}轮】：\n${aiAResponse}`
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -255,9 +254,11 @@ export function ConversationFlowClean() {
         originalQuestion,
         aiAResponse,
         round,
-        (chunk, isComplete) => updateStreamingMessage(aiBMessage.id, chunk, isComplete),
         newDiscussion
       )
+      
+      // 直接更新消息内容
+      updateStreamingMessage(aiBMessage.id, aiBResponse, true)
 
       const completeDiscussion = newDiscussion + `\n\n【AI助手B - 第${round}轮】：\n${aiBResponse}`
 
@@ -271,11 +272,13 @@ export function ConversationFlowClean() {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         
         const consensusMessage = createStreamingMessage("consensus")
-        await generateConsensusAnswerStreaming(
+        const consensusResponse = await generateConsensusAnswerStreaming(
           originalQuestion,
-          completeDiscussion,
-          (chunk, isComplete) => updateStreamingMessage(consensusMessage.id, chunk, isComplete)
+          completeDiscussion
         )
+        
+        // 直接更新消息内容
+        updateStreamingMessage(consensusMessage.id, consensusResponse, true)
 
         setConversation((prev) => ({
           ...prev,
