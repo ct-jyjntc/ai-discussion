@@ -92,25 +92,19 @@ export function ConversationFlowClean() {
     scrollToBottom()
   }, [conversation.messages, streamingMessages])
 
-  // 自动折叠逻辑 - 等待AI输出完成后再折叠
+  // 自动折叠逻辑
   useEffect(() => {
     if (activeMessageId) {
-      const currentMessage = conversation.messages.find(m => m.id === activeMessageId)
-      const isStreaming = !!streamingMessages[activeMessageId]
-      
-      // 只有当消息完成且不在流式输出状态时才开始计时折叠
-      if (currentMessage && !isStreaming && currentMessage.content) {
-        const timer = setTimeout(() => {
-          if (currentMessage.role !== 'consensus' && currentMessage.role !== 'user') {
-            setCollapsedMessages(prev => new Set([...prev, activeMessageId]))
-          }
-          setActiveMessageId(null)
-        }, 3000) // 减少到3秒，因为已确保输出完成
+      const timer = setTimeout(() => {
+        const prevActiveMessage = conversation.messages.find(m => m.id === activeMessageId)
+        if (prevActiveMessage && prevActiveMessage.role !== 'consensus' && prevActiveMessage.role !== 'user') {
+          setCollapsedMessages(prev => new Set([...prev, activeMessageId]))
+        }
+      }, 4000)
 
-        return () => clearTimeout(timer)
-      }
+      return () => clearTimeout(timer)
     }
-  }, [activeMessageId, conversation.messages, streamingMessages])
+  }, [activeMessageId, conversation.messages])
 
   const addMessage = (role: Message["role"], content: string, round?: number): Message => {
     const newMessage: Message = {
@@ -358,29 +352,29 @@ export function ConversationFlowClean() {
         variant={message.role === 'consensus' ? 'elevated' : 'default'}
         padding="none"
         className={cn(
-          "transition-all duration-700 ease-out",
+          "transition-all duration-500 ease-out",
           isActive && "scale-[1.01] ring-1 ring-slate-200 shadow-md",
-          message.role === 'consensus' && "bg-slate-50",
-          "overflow-hidden"
+          message.role === 'consensus' && "bg-slate-50"
         )}
       >
         {/* 头部 */}
-        <div
+        <div 
           className={cn(
             "flex items-center justify-between p-4",
             canCollapse && "cursor-pointer hover:bg-slate-50/50",
             canCollapse && !isCollapsed && !isStreaming && "border-b border-slate-100",
-            "transition-all duration-300 ease-out"
+            "transition-colors duration-200"
           )}
           onClick={() => canCollapse && toggleMessageCollapse(message.id)}
         >
           <div className="flex items-center gap-3">
             {canCollapse && (
-              <div className="transition-transform duration-500 ease-out">
-                <ChevronDown className={cn(
-                  "w-4 h-4 text-slate-400 transition-transform duration-500 ease-out",
-                  isCollapsed && "rotate-[-90deg]"
-                )} />
+              <div className="transition-transform duration-200">
+                {isCollapsed ? (
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                )}
               </div>
             )}
             
@@ -410,12 +404,7 @@ export function ConversationFlowClean() {
         </div>
 
         {/* 内容区域 */}
-        <div className={cn(
-          "transition-all duration-500 ease-out",
-          isCollapsed && canCollapse
-            ? "max-h-0 opacity-0 overflow-hidden"
-            : "max-h-[2000px] opacity-100"
-        )}>
+        {(!isCollapsed || !canCollapse) && (
           <div className="px-4 pb-4">
             <div className="prose prose-sm prose-slate max-w-none">
               <ReactMarkdown 
@@ -459,7 +448,7 @@ export function ConversationFlowClean() {
               )}
             </div>
           </div>
-        </div>
+        )}
       </EnhancedCard>
     )
   }
