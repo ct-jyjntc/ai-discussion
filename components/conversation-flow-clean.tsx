@@ -14,7 +14,6 @@ import {
 import { AIConfigPanel } from "./ai-config-panel"
 import type { ConversationState, Message } from "@/types/conversation"
 import { testAPI } from "@/actions/ai-conversation-v2"
-import { quickAPITest } from "@/actions/api-test"
 import {
   analyzeQuestionStreaming,
   aiDiscussionStreaming,
