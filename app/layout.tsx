@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'AI双向对话协作系统',
+  title: 'DISCUSSION',
   description: '观看两个AI助手深度讨论，直到达成共识',
   keywords: 'AI对话,人工智能,协作讨论,问答系统',
 }
