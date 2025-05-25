@@ -20,19 +20,20 @@ import {
   continueDiscussionStreaming,
   generateConsensusAnswerStreaming
 } from "@/lib/streaming-api"
-import { 
-  Loader2, 
-  Send, 
-  Check, 
-  ChevronDown, 
-  ChevronRight, 
-  Brain, 
-  MessageSquare, 
-  Sparkles, 
+import {
+  Loader2,
+  Send,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Brain,
+  MessageSquare,
+  Sparkles,
   User,
   AlertCircle,
   RefreshCw,
-  TestTube
+  TestTube,
+  Github
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -54,6 +55,35 @@ export function ConversationFlowClean() {
   const [error, setError] = useState<string>("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // 随机问题库
+  const randomQuestions = [
+    "如何在工作中保持高效和创造力的平衡？",
+    "人工智能对未来教育模式会产生什么影响？",
+    "在数字化时代，如何培养深度思考的能力？",
+    "远程工作与传统办公相比有哪些优缺点？",
+    "如何在快节奏的生活中保持心理健康？",
+    "区块链技术除了加密货币还有哪些应用前景？",
+    "可持续发展和经济增长之间如何找到平衡？",
+    "社交媒体对人际关系的影响是积极还是消极？",
+    "如何设计一个理想的城市交通系统？",
+    "在人工智能时代，哪些技能最值得学习？"
+  ]
+
+  const getRandomQuestions = () => {
+    const shuffled = [...randomQuestions].sort(() => Math.random() - 0.5)
+    return shuffled.slice(0, 3)
+  }
+
+  const [displayQuestions] = useState(() => getRandomQuestions())
+
+  const handleQuestionClick = (selectedQuestion: string) => {
+    setQuestion(selectedQuestion)
+    // 稍微延迟一下，让用户看到问题被填入
+    setTimeout(() => {
+      startConversation()
+    }, 100)
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -62,19 +92,25 @@ export function ConversationFlowClean() {
     scrollToBottom()
   }, [conversation.messages, streamingMessages])
 
-  // 自动折叠逻辑
+  // 自动折叠逻辑 - 等待AI输出完成后再折叠
   useEffect(() => {
     if (activeMessageId) {
-      const timer = setTimeout(() => {
-        const prevActiveMessage = conversation.messages.find(m => m.id === activeMessageId)
-        if (prevActiveMessage && prevActiveMessage.role !== 'consensus' && prevActiveMessage.role !== 'user') {
-          setCollapsedMessages(prev => new Set([...prev, activeMessageId]))
-        }
-      }, 4000)
+      const currentMessage = conversation.messages.find(m => m.id === activeMessageId)
+      const isStreaming = !!streamingMessages[activeMessageId]
+      
+      // 只有当消息完成且不在流式输出状态时才开始计时折叠
+      if (currentMessage && !isStreaming && currentMessage.content) {
+        const timer = setTimeout(() => {
+          if (currentMessage.role !== 'consensus' && currentMessage.role !== 'user') {
+            setCollapsedMessages(prev => new Set([...prev, activeMessageId]))
+          }
+          setActiveMessageId(null)
+        }, 3000) // 减少到3秒，因为已确保输出完成
 
-      return () => clearTimeout(timer)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [activeMessageId, conversation.messages])
+  }, [activeMessageId, conversation.messages, streamingMessages])
 
   const addMessage = (role: Message["role"], content: string, round?: number): Message => {
     const newMessage: Message = {
@@ -322,29 +358,29 @@ export function ConversationFlowClean() {
         variant={message.role === 'consensus' ? 'elevated' : 'default'}
         padding="none"
         className={cn(
-          "transition-all duration-500 ease-out",
+          "transition-all duration-700 ease-out",
           isActive && "scale-[1.01] ring-1 ring-slate-200 shadow-md",
-          message.role === 'consensus' && "bg-slate-50"
+          message.role === 'consensus' && "bg-slate-50",
+          "overflow-hidden"
         )}
       >
         {/* 头部 */}
-        <div 
+        <div
           className={cn(
             "flex items-center justify-between p-4",
             canCollapse && "cursor-pointer hover:bg-slate-50/50",
             canCollapse && !isCollapsed && !isStreaming && "border-b border-slate-100",
-            "transition-colors duration-200"
+            "transition-all duration-300 ease-out"
           )}
           onClick={() => canCollapse && toggleMessageCollapse(message.id)}
         >
           <div className="flex items-center gap-3">
             {canCollapse && (
-              <div className="transition-transform duration-200">
-                {isCollapsed ? (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                )}
+              <div className="transition-transform duration-500 ease-out">
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-slate-400 transition-transform duration-500 ease-out",
+                  isCollapsed && "rotate-[-90deg]"
+                )} />
               </div>
             )}
             
@@ -374,7 +410,12 @@ export function ConversationFlowClean() {
         </div>
 
         {/* 内容区域 */}
-        {(!isCollapsed || !canCollapse) && (
+        <div className={cn(
+          "transition-all duration-500 ease-out",
+          isCollapsed && canCollapse
+            ? "max-h-0 opacity-0 overflow-hidden"
+            : "max-h-[2000px] opacity-100"
+        )}>
           <div className="px-4 pb-4">
             <div className="prose prose-sm prose-slate max-w-none">
               <ReactMarkdown 
@@ -418,7 +459,7 @@ export function ConversationFlowClean() {
               )}
             </div>
           </div>
-        )}
+        </div>
       </EnhancedCard>
     )
   }
@@ -442,11 +483,26 @@ export function ConversationFlowClean() {
 
     if (conversation.messages.length === 0) {
       return (
-        <EmptyState
-          icon={<MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />}
-          title="开始智能协作对话"
-          description="输入任何需要深度思考的问题，观看两个AI助手展开专业讨论，直到达成共识"
-        />
+        <div className="flex items-center justify-center min-h-[70vh] px-4">
+          <div className="space-y-3 w-full max-w-2xl">
+            {displayQuestions.map((question, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuestionClick(question)}
+                className="w-full p-4 text-left bg-white border border-slate-200 rounded-md hover:border-slate-300 hover:shadow-md transition-all duration-200 group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-slate-600 font-medium">{index + 1}</span>
+                  </div>
+                  <p className="text-sm sm:text-base text-slate-700 group-hover:text-slate-900 transition-colors duration-200">
+                    {question}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       )
     }
 
@@ -462,6 +518,24 @@ export function ConversationFlowClean() {
 
   return (
     <MainContainer>
+      {/* DISCUSSION标题 - 左上角 */}
+      <div className="fixed top-4 left-4 sm:top-6 sm:left-6 p-2.5 sm:p-3 bg-white rounded-md shadow-lg border border-slate-200 z-40">
+        <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-wide">
+          DISCUSSION
+        </h1>
+      </div>
+
+      {/* GitHub链接 - 右上角 */}
+      <a
+        href="https://github.com/ct-jyjntc/ai-discussion"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 p-2.5 sm:p-3 bg-white rounded-md shadow-lg border border-slate-200 hover:border-slate-300 hover:shadow-xl transition-all duration-200 z-40"
+        title="查看GitHub源码"
+      >
+        <Github className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
+      </a>
+
       {/* 主要内容区域 */}
       <MainContent className="pt-6 sm:pt-8 pb-40 sm:pb-48">
         {renderMainContent()}
@@ -490,7 +564,7 @@ export function ConversationFlowClean() {
               disabled={conversation.isProcessing}
               className={cn(
                 "w-full min-h-[80px] sm:min-h-[100px] p-3 pr-20 pb-14",
-                "text-sm sm:text-base resize-none rounded-md",
+                "text-sm sm:text-base resize-none rounded-md shadow-lg",
                 "border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-200",
                 "transition-all duration-200 placeholder:text-slate-400",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -504,7 +578,7 @@ export function ConversationFlowClean() {
             />
             
             {/* 输入框内的按钮 */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-1">
+            <div className="absolute bottom-[11px] right-[11px] flex items-center gap-1">
               {/* 重新开始按钮 */}
               {conversation.messages.length > 0 && (
                 <button
@@ -520,7 +594,7 @@ export function ConversationFlowClean() {
               <button
                 onClick={startConversation}
                 disabled={!question.trim() || conversation.isProcessing}
-                className="p-2 bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors duration-200"
+                className="p-2 bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-full transition-colors duration-200"
                 title="发送"
               >
                 {conversation.isProcessing ? (
