@@ -39,6 +39,6 @@ jobs:
         with:
           project: "luna-ai-discussi-25"
           entrypoint: "jsr:@deno/nextjs-start/v15"
-          root: "root directory"
+          root: "."
           
           
