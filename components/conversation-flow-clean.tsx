@@ -251,26 +251,43 @@ export function ConversationFlowClean() {
       const aiAMessage = createStreamingMessage("ai_a", round)
       let aiAResponse: string = ""
 
-      if (round === 1) {
-        aiAResponse = await streamAnalyzeQuestionRealTime(
-          originalQuestion, 
-          round,
-          (chunk: string) => {
-            aiAResponse += chunk
-            updateStreamingMessage(aiAMessage.id, aiAResponse, false)
-          }
-        )
-      } else {
-        aiAResponse = await streamContinueDiscussionRealTime(
-          originalQuestion,
-          fullDiscussion,
-          round,
-          true,
-          (chunk: string) => {
-            aiAResponse += chunk
-            updateStreamingMessage(aiAMessage.id, aiAResponse, false)
-          }
-        )
+      try {
+        if (round === 1) {
+          aiAResponse = await streamAnalyzeQuestionRealTime(
+            originalQuestion, 
+            round,
+            (chunk: string) => {
+              aiAResponse += chunk
+              updateStreamingMessage(aiAMessage.id, aiAResponse, false)
+            }
+          )
+        } else {
+          aiAResponse = await streamContinueDiscussionRealTime(
+            originalQuestion,
+            fullDiscussion,
+            round,
+            true,
+            (chunk: string) => {
+              aiAResponse += chunk
+              updateStreamingMessage(aiAMessage.id, aiAResponse, false)
+            }
+          )
+        }
+      } catch (error: any) {
+        console.error(`AI助手A第${round}轮失败:`, error)
+        aiAResponse = `[AI助手A暂时无法响应，可能是由于API使用限制。错误信息: ${error.message}]`
+        updateStreamingMessage(aiAMessage.id, aiAResponse, false)
+        
+        // 如果是API限制错误，不继续执行
+        if (error.message.includes("Too many computers") || error.message.includes("rate limit")) {
+          updateStreamingMessage(aiAMessage.id, aiAResponse + "\n\n请稍后重试或联系管理员。", true)
+          throw new Error("API使用限制，请稍后重试")
+        }
+      }
+      
+      // 确保有内容才继续
+      if (!aiAResponse.trim()) {
+        aiAResponse = `[AI助手A在第${round}轮没有提供有效回应]`
       }
       
       // 标记完成
@@ -283,16 +300,33 @@ export function ConversationFlowClean() {
       const aiBMessage = createStreamingMessage("ai_b", round)
       let aiBResponse: string = ""
       
-      aiBResponse = await streamAIDiscussionRealTime(
-        originalQuestion,
-        aiAResponse,
-        round,
-        newDiscussion,
-        (chunk: string) => {
-          aiBResponse += chunk
-          updateStreamingMessage(aiBMessage.id, aiBResponse, false)
+      try {
+        aiBResponse = await streamAIDiscussionRealTime(
+          originalQuestion,
+          aiAResponse,
+          round,
+          newDiscussion,
+          (chunk: string) => {
+            aiBResponse += chunk
+            updateStreamingMessage(aiBMessage.id, aiBResponse, false)
+          }
+        )
+      } catch (error: any) {
+        console.error(`AI助手B第${round}轮失败:`, error)
+        aiBResponse = `[AI助手B暂时无法响应，可能是由于API使用限制。错误信息: ${error.message}]`
+        updateStreamingMessage(aiBMessage.id, aiBResponse, false)
+        
+        // 如果是API限制错误，不继续执行
+        if (error.message.includes("Too many computers") || error.message.includes("rate limit")) {
+          updateStreamingMessage(aiBMessage.id, aiBResponse + "\n\n请稍后重试或联系管理员。", true)
+          throw new Error("API使用限制，请稍后重试")
         }
-      )
+      }
+      
+      // 确保有内容才继续
+      if (!aiBResponse.trim()) {
+        aiBResponse = `[AI助手B在第${round}轮没有提供有效回应]`
+      }
       
       // 标记完成
       updateStreamingMessage(aiBMessage.id, aiBResponse, true)
@@ -316,9 +350,9 @@ export function ConversationFlowClean() {
         
         console.log(`共识检测结果:`, consensusResult)
         
+        // 只基于AI检测结果判断，不强制限制轮数
         const shouldGenerateConsensus = consensusResult.hasConsensus || 
-                                       consensusResult.recommendAction === "consensus" ||
-                                       round >= 4 // 最大轮次强制生成
+                                       consensusResult.recommendAction === "consensus"
         
         if (shouldGenerateConsensus) {
           await new Promise((resolve) => setTimeout(resolve, 500))
@@ -356,13 +390,20 @@ export function ConversationFlowClean() {
       } catch (consensusError: any) {
         console.error("共识检测失败，使用备用方案:", consensusError)
         
-        // 回退到简单的关键词检测
-        const hasConsensus = aiBResponse.includes("我们达成共识") || 
-                            aiBResponse.includes("达成共识") || 
-                            aiBResponse.includes("我同意") || 
-                            aiBResponse.includes("我认同")
+        // 如果是API限制错误，直接结束
+        if (consensusError.message.includes("Too many computers") || 
+            consensusError.message.includes("rate limit")) {
+          throw consensusError
+        }
         
-        if (hasConsensus || round >= 4) {
+        // 回退到简单的关键词检测（仅基于明确的共识表达）
+        const hasConsensus = aiBResponse.includes("我同意你的观点") ||
+                            aiBResponse.includes("我们在这点上达成了一致") ||
+                            aiBResponse.includes("我认为我们已经达成共识") ||
+                            aiBResponse.includes("我们达成共识") ||
+                            aiBResponse.includes("达成共识")
+        
+        if (hasConsensus) {
           await new Promise((resolve) => setTimeout(resolve, 1000))
           
           const consensusMessage = createStreamingMessage("consensus")
@@ -560,10 +601,18 @@ export function ConversationFlowClean() {
   // 渲染主内容
   const renderMainContent = () => {
     if (error && !conversation.isProcessing) {
+      // 检查是否是API限制错误
+      const isApiLimitError = error.includes("Too many computers") || 
+                             error.includes("rate limit") ||
+                             error.includes("API使用限制")
+      
       return (
         <ErrorState
-          title="对话出现错误"
-          message={error}
+          title={isApiLimitError ? "API使用限制" : "对话出现错误"}
+          message={isApiLimitError ? 
+            "当前API提供商设置了使用限制，请稍后重试或联系管理员更换API配置。" :
+            error
+          }
           retry={() => {
             setError("")
             if (conversation.originalQuestion) {

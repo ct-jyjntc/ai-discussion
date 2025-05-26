@@ -63,26 +63,28 @@ export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | '
     return `你是${config.name}。你的特点是${personalities.join('、')}。你的任务是与${AI_B_CONFIG.name}进行对话讨论，共同解决用户的问题。请用中文回复。
 
 对话规则：
-1. 你需要提出自己的观点和分析
-2. 认真考虑对方的意见
-3. 如果有分歧，要说明理由
-4. 如果同意对方观点，要明确表示
-5. 最终目标是达成共识
+1. 提出你的观点时要清晰明确
+2. 对${AI_B_CONFIG.name}的观点要明确表态：完全同意/部分同意/不同意
+3. 如果同意，请明确说"我同意你的观点"或"我们在这点上达成了一致"
+4. 如果不同意，要详细说明分歧所在和你的理由
+5. 如果认为双方已经充分讨论并达成一致，明确说出"我认为我们已经达成共识"
+6. 每次回复都要明确你对对方最新观点的态度
 
-这是第${round}轮讨论。发挥你${personalities.join('、')}的特长。`
+这是第${round}轮讨论。发挥你${personalities.join('、')}的特长，确保明确表达你的立场。`
   }
   
   if (role === 'ai_b') {
     return `你是${config.name}。你的特点是${personalities.join('、')}。你的任务是与${AI_A_CONFIG.name}进行对话讨论，共同解决用户的问题。请用中文回复。
 
 对话规则：
-1. 仔细阅读${AI_A_CONFIG.name}的观点
-2. 提出你的看法，可以同意、补充或反驳
-3. 如果有分歧，要说明理由和依据
-4. 如果认为讨论已经充分，说出"我们达成共识"
-5. 如果需要继续讨论，提出新的观点或问题
+1. 仔细分析${AI_A_CONFIG.name}的观点
+2. 明确表态：完全同意/部分同意/不同意，并说明原因
+3. 如果同意，请明确说"我同意你的观点"或"我们在这点上达成了一致"
+4. 如果有分歧，详细阐述你的不同看法和理由
+5. 如果认为双方已经充分讨论并达成一致，明确说出"我认为我们已经达成共识"
+6. 每次回复都要明确你对对方最新观点的态度
 
-这是第${round}轮讨论。发挥你${personalities.join('、')}的特长。`
+这是第${round}轮讨论。发挥你${personalities.join('、')}的特长，确保明确表达你的立场。`
   }
   
   if (role === 'consensus') {
@@ -101,29 +103,31 @@ export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | '
   }
 
   if (role === 'consensus_detector') {
-    return `你是专业的共识检测AI。你的任务是分析两个AI助手的对话，判断他们是否真正达成了共识。
+    return `你是专业的共识检测AI。你的任务是分析两个AI助手的最新对话，判断他们是否真正达成了共识。
 
-分析要求：
-1. 仔细阅读完整的对话内容
-2. 识别双方的核心观点
-3. 判断是否存在实质性分歧
-4. 评估共识的质量和完整性
+分析重点：
+1. 重点关注最新两轮对话内容
+2. 检查双方是否明确表达了同意对方的观点
+3. 寻找"我同意"、"我们达成一致"、"我认为我们已经达成共识"等明确表态
+4. 判断是否还存在未解决的分歧
 
-判断标准：
-- 双方明确表达了同意
-- 没有未解决的重大分歧
-- 讨论已经充分深入
-- 可以形成一致的结论
+严格的共识判断标准：
+- 双方都明确表示同意对方的观点
+- 没有任何未解决的重大分歧
+- 至少有一方明确说出"达成共识"相关表述
+- 双方的观点可以合并为一致的结论
 
 回复格式（必须是严格的JSON格式）：
 {
   "hasConsensus": true/false,
   "confidence": 0-100的数字,
-  "reason": "详细的判断理由",
-  "keyPoints": ["关键观点1", "关键观点2"]
+  "reason": "详细的判断理由，重点说明双方的表态",
+  "recommendAction": "continue/consensus",
+  "keyPoints": ["双方一致的关键观点1", "双方一致的关键观点2"],
+  "suggestions": ["如果需要继续讨论的建议"]
 }
 
-请确保回复是有效的JSON格式，不要添加任何其他文字。`
+请确保回复是有效的JSON格式，不要添加任何其他文字。只有当双方明确表达同意并且没有分歧时才判断为达成共识。`
   }
   
   return ""
@@ -147,6 +151,11 @@ export async function callAI(config: AIConfig, systemPrompt: string, userPrompt:
   }
 
   console.log(`Calling ${config.name} API:`, config.apiUrl)
+  console.log("Request headers:", {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${config.apiKey.substring(0, 8)}...`,
+    "Accept": "application/json"
+  })
   console.log("Request body:", JSON.stringify(requestBody, null, 2))
 
   try {
@@ -160,6 +169,7 @@ export async function callAI(config: AIConfig, systemPrompt: string, userPrompt:
       body: JSON.stringify(requestBody),
     })
 
+    console.log(`${config.name} response status:`, response.status, response.statusText)
     const responseText = await response.text()
     console.log(`${config.name} response:`, responseText)
 
@@ -230,6 +240,12 @@ export async function callAIStreaming(
   }
 
   console.log(`Calling ${config.name} API (streaming):`, config.apiUrl)
+  console.log("Request headers:", {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${config.apiKey.substring(0, 8)}...`,
+    "Accept": "text/event-stream"
+  })
+  console.log("Request body:", JSON.stringify(requestBody, null, 2))
 
   try {
     const response = await fetch(config.apiUrl, {
@@ -242,8 +258,14 @@ export async function callAIStreaming(
       body: JSON.stringify(requestBody),
     })
 
+    console.log(`${config.name} response status:`, response.status, response.statusText)
+    console.log(`${config.name} response headers:`, Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      throw new Error(`${config.name} API调用失败: ${response.status} ${response.statusText}`)
+      // 尝试读取错误响应体
+      const errorText = await response.text()
+      console.error(`${config.name} error response:`, errorText)
+      throw new Error(`${config.name} API调用失败: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const reader = response.body?.getReader()

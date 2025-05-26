@@ -25,16 +25,20 @@ export async function detectConsensus(
 ): Promise<ConsensusResult> {
   const systemPrompt = generateSystemPrompt(CONSENSUS_DETECTOR_CONFIG, 'consensus_detector', round)
   
+  // 提取最新两次对话内容
+  const recentDialogue = extractRecentDialogue(fullDiscussion, 2)
+  
   const userPrompt = `分析以下AI对话，判断是否达成共识：
 
 原始问题：「${question}」
 
-完整对话记录：
-${fullDiscussion}
+最新两轮对话内容：
+${recentDialogue}
 
 当前轮次：第${round}轮
+总讨论内容长度：${fullDiscussion.length}字符
 
-请按照要求的JSON格式返回分析结果。`
+请重点分析最新两轮对话中双方的表态，判断是否明确达成了共识。只有当双方都明确表示同意并且没有分歧时才判断为达成共识。`
 
   try {
     const response = await callAI(CONSENSUS_DETECTOR_CONFIG, systemPrompt, userPrompt)
@@ -72,7 +76,7 @@ ${fullDiscussion}
     console.error('共识检测失败:', error)
     
     // 如果AI检测失败，回退到简单的关键词检测
-    const fallbackResult = fallbackConsensusDetection(fullDiscussion, round)
+    const fallbackResult = fallbackConsensusDetection(recentDialogue, round)
     
     return {
       hasConsensus: fallbackResult.hasConsensus,
@@ -86,42 +90,68 @@ ${fullDiscussion}
 }
 
 /**
+ * 提取最新N轮对话内容
+ */
+function extractRecentDialogue(fullDiscussion: string, rounds: number): string {
+  const lines = fullDiscussion.split('\n')
+  const dialogueBlocks: string[] = []
+  let currentBlock = ""
+  
+  for (const line of lines) {
+    if (line.includes('【AI助手') || line.includes('【') && line.includes('】')) {
+      if (currentBlock.trim()) {
+        dialogueBlocks.push(currentBlock.trim())
+      }
+      currentBlock = line
+    } else if (line.trim()) {
+      currentBlock += '\n' + line
+    }
+  }
+  
+  // 添加最后一个对话块
+  if (currentBlock.trim()) {
+    dialogueBlocks.push(currentBlock.trim())
+  }
+  
+  // 返回最新的N轮对话（每轮包含A和B的发言）
+  const recentBlocks = dialogueBlocks.slice(-rounds * 2)
+  return recentBlocks.join('\n\n')
+}
+
+/**
  * 回退的共识检测方法 - 基于关键词匹配
  */
-function fallbackConsensusDetection(fullDiscussion: string, round: number): {
+function fallbackConsensusDetection(recentDialogue: string, round: number): {
   hasConsensus: boolean
   reason: string
 } {
   const consensusKeywords = [
+    "我同意你的观点",
+    "我们在这点上达成了一致", 
+    "我认为我们已经达成共识",
     "我们达成共识",
-    "达成共识", 
+    "达成共识",
     "我同意",
     "我认同",
     "完全同意",
-    "赞同你的观点",
     "我们的观点一致",
     "没有分歧",
     "观点相同"
   ]
   
   const hasKeyword = consensusKeywords.some(keyword => 
-    fullDiscussion.includes(keyword)
+    recentDialogue.includes(keyword)
   )
-  
-  const maxRounds = 4
-  const forceConsensus = round >= maxRounds
   
   let reason = ""
   if (hasKeyword) {
-    reason = "检测到共识关键词"
-  } else if (forceConsensus) {
-    reason = `已达到最大轮次 (${maxRounds})，强制生成共识`
+    reason = "在最新对话中检测到共识关键词"
   } else {
-    reason = "未检测到明确的共识信号"
+    reason = "在最新对话中未检测到明确的共识信号"
   }
   
   return {
-    hasConsensus: hasKeyword || forceConsensus,
+    hasConsensus: hasKeyword,
     reason
   }
 }

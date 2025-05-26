@@ -2,6 +2,7 @@
 
 import type { ConversationState, Message } from "@/types/conversation"
 import { AI_A_CONFIG, AI_B_CONFIG, CONSENSUS_CONFIG, generateSystemPrompt, callAI } from "@/lib/ai-config"
+import { detectConsensus } from "./consensus-detection"
 
 export async function testAPI() {
   try {
@@ -122,9 +123,9 @@ export async function startCollaborativeDiscussion(question: string): Promise<Co
 
     let fullDiscussion = ""
     let round = 1
-    const maxRounds = 4
 
-    while (round <= maxRounds) {
+    // 移除最大轮数限制，完全基于AI共识检测决定何时结束
+    while (true) {
       conversation.currentRound = round
 
       // AI助手A发言
@@ -160,26 +161,50 @@ export async function startCollaborativeDiscussion(question: string): Promise<Co
       // 更新完整讨论历史
       fullDiscussion += `\n\n【${AI_B_CONFIG.name} - 第${round}轮】：\n${aiBResponse}`
 
-      // 检查是否达成共识
-      const hasConsensus = aiBResponse.includes("我们达成共识") || 
-                          aiBResponse.includes("达成共识") || 
-                          aiBResponse.includes("我同意") || 
-                          aiBResponse.includes("我认同")
-
-      if (hasConsensus || round >= maxRounds) {
-        // 生成共识答案
-        const consensusAnswer = await generateConsensusAnswer(question, fullDiscussion)
+      // 使用AI检测共识
+      try {
+        const consensusResult = await detectConsensus(question, fullDiscussion, round)
         
-        conversation.messages.push({
-          id: `consensus_${Date.now()}`,
-          role: "consensus",
-          content: consensusAnswer,
-          timestamp: new Date(),
-        })
+        if (consensusResult.hasConsensus || consensusResult.recommendAction === "consensus") {
+          // 生成共识答案
+          const consensusAnswer = await generateConsensusAnswer(question, fullDiscussion)
+          
+          conversation.messages.push({
+            id: `consensus_${Date.now()}`,
+            role: "consensus",
+            content: consensusAnswer,
+            timestamp: new Date(),
+          })
 
-        conversation.isComplete = true
-        conversation.isProcessing = false
-        break
+          conversation.isComplete = true
+          conversation.isProcessing = false
+          break
+        }
+      } catch (consensusError: any) {
+        console.error('共识检测失败，使用备用方案:', consensusError)
+        
+        // 回退到关键词检测（仅检测明确的共识表达）
+        const hasConsensus = aiBResponse.includes("我同意你的观点") ||
+                            aiBResponse.includes("我们在这点上达成了一致") ||
+                            aiBResponse.includes("我认为我们已经达成共识") ||
+                            aiBResponse.includes("我们达成共识") ||
+                            aiBResponse.includes("达成共识")
+
+        if (hasConsensus) {
+          // 生成共识答案
+          const consensusAnswer = await generateConsensusAnswer(question, fullDiscussion)
+          
+          conversation.messages.push({
+            id: `consensus_${Date.now()}`,
+            role: "consensus",
+            content: consensusAnswer,
+            timestamp: new Date(),
+          })
+
+          conversation.isComplete = true
+          conversation.isProcessing = false
+          break
+        }
       }
 
       round++
