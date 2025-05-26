@@ -27,7 +27,7 @@ interface RequiredEnvVars {
 
 function validateEnvVar(name: string, value: string | undefined): string {
   if (!value || value.trim() === '') {
-    throw new Error(`环境变量 ${name} 未设置或为空。请在 .env.local 文件中配置此变量。`)
+    throw new Error(`环境变量 ${name} 未设置或为空。请在 .env 文件中配置此变量。`)
   }
   return value.trim()
 }
@@ -63,7 +63,7 @@ function validateRequiredEnvVars(): RequiredEnvVars {
     console.error('❌ 环境变量验证失败:', error.message)
     console.error('')
     console.error('请检查以下事项：')
-    console.error('1. 确保 .env.local 文件存在于项目根目录')
+    console.error('1. 确保 .env 文件存在于项目根目录')
     console.error('2. 确保所有必需的环境变量都已设置')
     console.error('3. 确保环境变量值不为空')
     console.error('')

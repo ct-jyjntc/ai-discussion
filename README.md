@@ -37,12 +37,12 @@ npm install --legacy-peer-deps
 
 ```bash
 # 复制环境变量模板
-cp .env.local.example .env.local
+cp .env.local.example .env
 ```
 
 ### 3. 配置 API 密钥
 
-在 `.env.local` 文件中配置以下必需的环境变量：
+在 `.env` 文件中配置以下必需的环境变量：
 
 ```env
 # AI助手A配置
@@ -173,7 +173,7 @@ npm run lint         # 代码检查（如果可用）
 
 检查以下事项：
 
-1. ✅ `.env.local` 文件是否存在
+1. ✅ `.env` 文件是否存在
 2. ✅ 所有环境变量是否都已配置
 3. ✅ API URL和API Key是否正确
 4. ✅ 尝试重启开发服务器
@@ -189,7 +189,7 @@ npm run lint         # 代码检查（如果可用）
 
 | 错误 | 原因 | 解决方案 |
 |------|------|----------|
-| `Environment variables not configured` | 环境变量未配置 | 检查 `.env.local` 文件 |
+| `Environment variables not configured` | 环境变量未配置 | 检查 `.env` 文件 |
 | `API Key invalid` | API密钥无效 | 重新生成API密钥 |
 | `Network error` | 网络连接问题 | 检查网络连接和防火墙设置 |
 
