@@ -74,7 +74,12 @@ export function ConversationFlowClean() {
     return shuffled.slice(0, 3)
   }
 
-  const [displayQuestions] = useState(() => getRandomQuestions())
+  const [displayQuestions, setDisplayQuestions] = useState(randomQuestions.slice(0, 3))
+
+  useEffect(() => {
+    // 仅在客户端执行随机化
+    setDisplayQuestions(getRandomQuestions())
+  }, [])
 
   const handleQuestionClick = (selectedQuestion: string) => {
     setQuestion(selectedQuestion)
