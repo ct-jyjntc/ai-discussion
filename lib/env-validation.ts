@@ -18,6 +18,11 @@ interface RequiredEnvVars {
   CONSENSUS_API_URL: string
   CONSENSUS_API_KEY: string
   CONSENSUS_MODEL: string
+
+  // 共识检测AI配置
+  CONSENSUS_DETECTOR_API_URL: string
+  CONSENSUS_DETECTOR_API_KEY: string
+  CONSENSUS_DETECTOR_MODEL: string
 }
 
 function validateEnvVar(name: string, value: string | undefined): string {
@@ -48,6 +53,11 @@ function validateRequiredEnvVars(): RequiredEnvVars {
       CONSENSUS_API_URL: validateEnvVar('CONSENSUS_API_URL', process.env.CONSENSUS_API_URL),
       CONSENSUS_API_KEY: validateEnvVar('CONSENSUS_API_KEY', process.env.CONSENSUS_API_KEY),
       CONSENSUS_MODEL: validateEnvVar('CONSENSUS_MODEL', process.env.CONSENSUS_MODEL),
+
+      // 共识检测AI配置
+      CONSENSUS_DETECTOR_API_URL: validateEnvVar('CONSENSUS_DETECTOR_API_URL', process.env.CONSENSUS_DETECTOR_API_URL),
+      CONSENSUS_DETECTOR_API_KEY: validateEnvVar('CONSENSUS_DETECTOR_API_KEY', process.env.CONSENSUS_DETECTOR_API_KEY),
+      CONSENSUS_DETECTOR_MODEL: validateEnvVar('CONSENSUS_DETECTOR_MODEL', process.env.CONSENSUS_DETECTOR_MODEL),
     }
   } catch (error: any) {
     console.error('❌ 环境变量验证失败:', error.message)
@@ -61,6 +71,7 @@ function validateRequiredEnvVars(): RequiredEnvVars {
     console.error('- AI_A_API_URL, AI_A_API_KEY, AI_A_MODEL, AI_A_NAME, AI_A_PERSONALITY')
     console.error('- AI_B_API_URL, AI_B_API_KEY, AI_B_MODEL, AI_B_NAME, AI_B_PERSONALITY')
     console.error('- CONSENSUS_API_URL, CONSENSUS_API_KEY, CONSENSUS_MODEL')
+    console.error('- CONSENSUS_DETECTOR_API_URL, CONSENSUS_DETECTOR_API_KEY, CONSENSUS_DETECTOR_MODEL')
     
     throw error
   }

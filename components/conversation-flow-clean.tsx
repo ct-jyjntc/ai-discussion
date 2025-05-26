@@ -20,6 +20,7 @@ import {
   continueDiscussionStreaming,
   generateConsensusAnswerStreaming
 } from "@/actions/streaming-actions"
+import type { ConsensusResult } from "@/actions/consensus-detection"
 import {
   Loader2,
   SendHorizontal,
@@ -97,20 +98,6 @@ export function ConversationFlowClean() {
     scrollToBottom()
   }, [conversation.messages, streamingMessages])
 
-  // 自动折叠逻辑
-  useEffect(() => {
-    if (activeMessageId) {
-      const timer = setTimeout(() => {
-        const prevActiveMessage = conversation.messages.find(m => m.id === activeMessageId)
-        if (prevActiveMessage && prevActiveMessage.role !== 'consensus' && prevActiveMessage.role !== 'user') {
-          setCollapsedMessages(prev => new Set([...prev, activeMessageId]))
-        }
-      }, 4000)
-
-      return () => clearTimeout(timer)
-    }
-  }, [activeMessageId, conversation.messages])
-
   const addMessage = (role: Message["role"], content: string, round?: number): Message => {
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -148,6 +135,21 @@ export function ConversationFlowClean() {
       return newSet
     })
     
+    // 如果是共识消息开始，折叠所有之前的AI消息
+    if (role === 'consensus') {
+      setTimeout(() => {
+        setCollapsedMessages(prev => {
+          const newSet = new Set(prev)
+          conversation.messages.forEach(msg => {
+            if (msg.role === 'ai_a' || msg.role === 'ai_b') {
+              newSet.add(msg.id)
+            }
+          })
+          return newSet
+        })
+      }, 100) // 小延迟确保消息已添加到状态中
+    }
+    
     setActiveMessageId(newMessage.id)
     return newMessage
   }
@@ -156,12 +158,26 @@ export function ConversationFlowClean() {
     setStreamingMessages(prev => ({ ...prev, [messageId]: content }))
     
     if (isComplete) {
-      setConversation(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
+      setConversation(prev => {
+        const updatedMessages = prev.messages.map(msg => 
           msg.id === messageId ? { ...msg, content } : msg
         )
-      }))
+        
+        // 获取刚完成的消息信息
+        const completedMessage = updatedMessages.find(m => m.id === messageId)
+        
+        // 如果是AI消息完成，延迟2秒后折叠
+        if (completedMessage && completedMessage.role !== 'consensus' && completedMessage.role !== 'user') {
+          setTimeout(() => {
+            setCollapsedMessages(prevCollapsed => new Set([...prevCollapsed, messageId]))
+          }, 2000)
+        }
+        
+        return {
+          ...prev,
+          messages: updatedMessages
+        }
+      })
       
       setStreamingMessages(prev => {
         const { [messageId]: _, ...rest } = prev
@@ -233,20 +249,31 @@ export function ConversationFlowClean() {
     try {
       // AI助手A发言
       const aiAMessage = createStreamingMessage("ai_a", round)
-      let aiAResponse: string
+      let aiAResponse: string = ""
 
       if (round === 1) {
-        aiAResponse = await analyzeQuestionStreaming(originalQuestion, round)
+        aiAResponse = await streamAnalyzeQuestionRealTime(
+          originalQuestion, 
+          round,
+          (chunk: string) => {
+            aiAResponse += chunk
+            updateStreamingMessage(aiAMessage.id, aiAResponse, false)
+          }
+        )
       } else {
-        aiAResponse = await continueDiscussionStreaming(
+        aiAResponse = await streamContinueDiscussionRealTime(
           originalQuestion,
           fullDiscussion,
           round,
-          true
+          true,
+          (chunk: string) => {
+            aiAResponse += chunk
+            updateStreamingMessage(aiAMessage.id, aiAResponse, false)
+          }
         )
       }
       
-      // 直接更新消息内容
+      // 标记完成
       updateStreamingMessage(aiAMessage.id, aiAResponse, true)
 
       const newDiscussion = fullDiscussion + `\n\n【AI助手A - 第${round}轮】：\n${aiAResponse}`
@@ -254,49 +281,119 @@ export function ConversationFlowClean() {
 
       // AI助手B回应
       const aiBMessage = createStreamingMessage("ai_b", round)
-      const aiBResponse = await aiDiscussionStreaming(
+      let aiBResponse: string = ""
+      
+      aiBResponse = await streamAIDiscussionRealTime(
         originalQuestion,
         aiAResponse,
         round,
-        newDiscussion
+        newDiscussion,
+        (chunk: string) => {
+          aiBResponse += chunk
+          updateStreamingMessage(aiBMessage.id, aiBResponse, false)
+        }
       )
       
-      // 直接更新消息内容
+      // 标记完成
       updateStreamingMessage(aiBMessage.id, aiBResponse, true)
 
       const completeDiscussion = newDiscussion + `\n\n【AI助手B - 第${round}轮】：\n${aiBResponse}`
 
-      // 检查共识
-      const hasConsensus = aiBResponse.includes("我们达成共识") || 
-                          aiBResponse.includes("达成共识") || 
-                          aiBResponse.includes("我同意") || 
-                          aiBResponse.includes("我认同")
+      // 使用AI检测共识
+      await new Promise((resolve) => setTimeout(resolve, 1000))
       
-      if (hasConsensus || round >= 4) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+      try {
+        console.log(`开始共识检测 - 第${round}轮`)
         
-        const consensusMessage = createStreamingMessage("consensus")
-        const consensusResponse = await generateConsensusAnswerStreaming(
+        const consensusResult = await streamConsensusDetectionRealTime(
           originalQuestion,
-          completeDiscussion
+          completeDiscussion,
+          round,
+          (status: string) => {
+            console.log(`共识检测进度: ${status}`)
+          }
         )
         
-        // 直接更新消息内容
-        updateStreamingMessage(consensusMessage.id, consensusResponse, true)
+        console.log(`共识检测结果:`, consensusResult)
+        
+        const shouldGenerateConsensus = consensusResult.hasConsensus || 
+                                       consensusResult.recommendAction === "consensus" ||
+                                       round >= 4 // 最大轮次强制生成
+        
+        if (shouldGenerateConsensus) {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          
+          const consensusMessage = createStreamingMessage("consensus")
+          let consensusResponse: string = ""
+          
+          consensusResponse = await streamGenerateConsensusAnswerRealTime(
+            originalQuestion,
+            completeDiscussion,
+            (chunk: string) => {
+              consensusResponse += chunk
+              updateStreamingMessage(consensusMessage.id, consensusResponse, false)
+            }
+          )
+          
+          // 标记完成
+          updateStreamingMessage(consensusMessage.id, consensusResponse, true)
 
-        setConversation((prev) => ({
-          ...prev,
-          isComplete: true,
-          isProcessing: false,
-        }))
-      } else {
-        setConversation((prev) => ({
-          ...prev,
-          currentRound: round + 1,
-        }))
+          setConversation((prev) => ({
+            ...prev,
+            isComplete: true,
+            isProcessing: false,
+          }))
+        } else {
+          setConversation((prev) => ({
+            ...prev,
+            currentRound: round + 1,
+          }))
 
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        await processRound(originalQuestion, round + 1, completeDiscussion)
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          await processRound(originalQuestion, round + 1, completeDiscussion)
+        }
+        
+      } catch (consensusError: any) {
+        console.error("共识检测失败，使用备用方案:", consensusError)
+        
+        // 回退到简单的关键词检测
+        const hasConsensus = aiBResponse.includes("我们达成共识") || 
+                            aiBResponse.includes("达成共识") || 
+                            aiBResponse.includes("我同意") || 
+                            aiBResponse.includes("我认同")
+        
+        if (hasConsensus || round >= 4) {
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          
+          const consensusMessage = createStreamingMessage("consensus")
+          let consensusResponse: string = ""
+          
+          consensusResponse = await streamGenerateConsensusAnswerRealTime(
+            originalQuestion,
+            completeDiscussion,
+            (chunk: string) => {
+              consensusResponse += chunk
+              updateStreamingMessage(consensusMessage.id, consensusResponse, false)
+            }
+          )
+          
+          // 标记完成
+          updateStreamingMessage(consensusMessage.id, consensusResponse, true)
+
+          setConversation((prev) => ({
+            ...prev,
+            isComplete: true,
+            isProcessing: false,
+          }))
+        } else {
+          setConversation((prev) => ({
+            ...prev,
+            currentRound: round + 1,
+          }))
+
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          await processRound(originalQuestion, round + 1, completeDiscussion)
+        }
       }
     } catch (error: any) {
       console.error("Error in round processing:", error)
@@ -510,6 +607,198 @@ export function ConversationFlowClean() {
         <div ref={messagesEndRef} />
       </div>
     )
+  }
+
+  // 流式传输辅助函数
+  const streamResponse = async (
+    endpoint: string,
+    data: any,
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+    let fullContent = ""
+
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              
+              if (data === '[DONE]') {
+                return fullContent
+              }
+
+              try {
+                const json = JSON.parse(data)
+                const content = json.content || ''
+                
+                if (content) {
+                  fullContent += content
+                  onChunk(content)
+                }
+              } catch (parseError) {
+                continue
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+    }
+
+    return fullContent
+  }
+
+  // 实时流式分析问题
+  const streamAnalyzeQuestionRealTime = async (
+    question: string,
+    round: number,
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    return await streamResponse('/api/stream/analyze', { question, round }, onChunk)
+  }
+
+  // 实时流式AI讨论
+  const streamAIDiscussionRealTime = async (
+    question: string,
+    aiAResponse: string,
+    round: number,
+    fullDiscussion: string,
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    return await streamResponse('/api/stream/discuss', {
+      question,
+      aiAResponse,
+      round,
+      fullDiscussion
+    }, onChunk)
+  }
+
+  // 实时流式继续讨论
+  const streamContinueDiscussionRealTime = async (
+    question: string,
+    fullDiscussion: string,
+    round: number,
+    isAiA: boolean,
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    return await streamResponse('/api/stream/continue', {
+      question,
+      fullDiscussion,
+      round,
+      isAiA
+    }, onChunk)
+  }
+
+  // 实时流式生成共识答案
+  const streamGenerateConsensusAnswerRealTime = async (
+    question: string,
+    fullDiscussion: string,
+    onChunk: (chunk: string) => void
+  ): Promise<string> => {
+    return await streamResponse('/api/stream/consensus', {
+      question,
+      fullDiscussion
+    }, onChunk)
+  }
+
+  // 实时流式共识检测
+  const streamConsensusDetectionRealTime = async (
+    question: string,
+    fullDiscussion: string,
+    round: number,
+    onProgress?: (status: string) => void
+  ): Promise<ConsensusResult> => {
+    const response = await fetch('/api/stream/consensus-detection', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ question, fullDiscussion, round }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+    let result: ConsensusResult | null = null
+
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              
+              if (data === '[DONE]') {
+                return result || {
+                  hasConsensus: false,
+                  confidence: 0,
+                  reason: "检测失败",
+                  recommendAction: "continue",
+                  keyPoints: [],
+                  suggestions: []
+                }
+              }
+
+              try {
+                const json = JSON.parse(data)
+                
+                if (json.type === 'progress' && onProgress) {
+                  onProgress(json.content)
+                } else if (json.type === 'result') {
+                  result = json.content
+                } else if (json.type === 'error') {
+                  throw new Error(json.content)
+                }
+              } catch (parseError) {
+                continue
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+    }
+
+    return result || {
+      hasConsensus: false,
+      confidence: 0,
+      reason: "检测失败",
+      recommendAction: "continue",
+      keyPoints: [],
+      suggestions: []
+    }
   }
 
   return (
