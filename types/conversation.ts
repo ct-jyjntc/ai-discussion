@@ -2,7 +2,7 @@ import type { ConsensusResult } from "@/actions/consensus-detection"
 
 export interface Message {
   id: string
-  role: "ai_a" | "ai_b" | "user" | "consensus"
+  role: "ai_a" | "ai_b" | "user" | "consensus" | "system"
   content: string
   timestamp: Date
   round?: number

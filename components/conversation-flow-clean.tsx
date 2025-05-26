@@ -339,6 +339,10 @@ export function ConversationFlowClean() {
       // 使用AI检测共识
       await new Promise((resolve) => setTimeout(resolve, 1000))
       
+      // 创建共识检测状态消息（简单提示，不可展开）
+      const consensusDetectionMessage = createStreamingMessage("system")
+      updateStreamingMessage(consensusDetectionMessage.id, "正在分析对话内容...", false)
+      
       try {
         console.log(`开始共识检测 - 第${round}轮`)
         
@@ -348,10 +352,22 @@ export function ConversationFlowClean() {
           round,
           (status: string) => {
             console.log(`共识检测进度: ${status}`)
+            // 保持简单的提示文本，不更新状态
+            // updateStreamingMessage(consensusDetectionMessage.id, `🤖 ${status}`, false)
           }
         )
         
         console.log(`共识检测结果:`, consensusResult)
+        
+        // 删除检测状态消息
+        setConversation((prev) => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== consensusDetectionMessage.id)
+        }))
+        setStreamingMessages(prev => {
+          const { [consensusDetectionMessage.id]: _, ...rest } = prev
+          return rest
+        })
         
         // 决策逻辑优化：优先基于 recommendAction，确保逻辑一致性
         const shouldGenerateConsensus = consensusResult.recommendAction === "consensus"
@@ -404,6 +420,16 @@ export function ConversationFlowClean() {
         
       } catch (consensusError: any) {
         console.error("共识检测失败，使用备用方案:", consensusError)
+        
+        // 删除检测状态消息
+        setConversation((prev) => ({
+          ...prev,
+          messages: prev.messages.filter(msg => msg.id !== consensusDetectionMessage.id)
+        }))
+        setStreamingMessages(prev => {
+          const { [consensusDetectionMessage.id]: _, ...rest } = prev
+          return rest
+        })
         
         // 如果是API限制错误，直接结束
         if (consensusError.message.includes("Too many computers") || 
@@ -485,6 +511,8 @@ export function ConversationFlowClean() {
         return <User className="w-4 h-4 text-slate-500" />
       case "consensus":
         return <Sparkles className="w-4 h-4 text-slate-800" />
+      case "system":
+        return <AlertCircle className="w-4 h-4 text-slate-600" />
     }
   }
 
@@ -498,6 +526,8 @@ export function ConversationFlowClean() {
         return "用户问题"
       case "consensus":
         return "🎯 共识答案"
+      case "system":
+        return "💭 系统提示"
     }
   }
 
@@ -505,8 +535,24 @@ export function ConversationFlowClean() {
     const isActive = activeMessageId === message.id
     const isStreaming = !!streamingMessages[message.id]
     const isCollapsed = collapsedMessages.has(message.id)
-    const canCollapse = message.role !== 'consensus' && message.role !== 'user'
+    const canCollapse = message.role !== 'consensus' && message.role !== 'user' && message.role !== 'system'
     const displayContent = isStreaming ? streamingMessages[message.id] : message.content
+
+    // 系统消息显示为简单的状态条
+    if (message.role === 'system') {
+      return (
+        <div className="flex items-center justify-center py-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full">
+            <div className="flex items-center gap-0.5">
+              <div className="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1 h-1 bg-slate-400 rounded-full animate-bounce"></div>
+            </div>
+            <span className="text-xs text-slate-600">{displayContent}</span>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <EnhancedCard
