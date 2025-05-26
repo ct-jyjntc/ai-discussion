@@ -22,7 +22,7 @@ import {
 } from "@/actions/streaming-actions"
 import {
   Loader2,
-  Send,
+  SendHorizontal,
   Check,
   ChevronDown,
   ChevronRight,
@@ -574,12 +574,12 @@ export function ConversationFlowClean() {
             />
             
             {/* 输入框内的按钮 */}
-            <div className="absolute bottom-[11px] right-[11px] flex items-center gap-1">
+            <div className="absolute bottom-3 right-2 flex items-center gap-1">
               {/* 重新开始按钮 */}
               {conversation.messages.length > 0 && (
                 <button
                   onClick={resetConversation}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors duration-200"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors duration-200"
                   title="重新开始"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -596,7 +596,7 @@ export function ConversationFlowClean() {
                 {conversation.isProcessing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <SendHorizontal className="w-4 h-4" />
                 )}
               </button>
             </div>
