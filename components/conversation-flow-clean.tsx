@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { EnhancedCard } from "./ui/enhanced-card"
+import { ConsensusInsights } from "./ui/consensus-insights"
 import { 
   MainContainer, 
   StickyHeader, 
@@ -47,6 +48,7 @@ export function ConversationFlowClean() {
     isComplete: false,
     isProcessing: false,
     originalQuestion: "",
+    finalConsensusResult: undefined,
   })
   const [streamingMessages, setStreamingMessages] = useState<Record<string, string>>({})
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null)
@@ -231,6 +233,7 @@ export function ConversationFlowClean() {
       isComplete: false,
       isProcessing: true,
       originalQuestion: question,
+      finalConsensusResult: undefined,
     })
 
     setCollapsedMessages(new Set())
@@ -350,9 +353,14 @@ export function ConversationFlowClean() {
         
         console.log(`共识检测结果:`, consensusResult)
         
-        // 只基于AI检测结果判断，不强制限制轮数
-        const shouldGenerateConsensus = consensusResult.hasConsensus || 
-                                       consensusResult.recommendAction === "consensus"
+        // 决策逻辑优化：优先基于 recommendAction，确保逻辑一致性
+        const shouldGenerateConsensus = consensusResult.recommendAction === "consensus"
+        
+        // 如果检测到矛盾，记录日志
+        if (consensusResult.hasConsensus && consensusResult.recommendAction === "continue") {
+          console.log(`检测到共识状态矛盾: hasConsensus=${consensusResult.hasConsensus}, recommendAction=${consensusResult.recommendAction}`)
+          console.log(`基于 recommendAction 决定继续讨论`)
+        }
         
         if (shouldGenerateConsensus) {
           await new Promise((resolve) => setTimeout(resolve, 500))
@@ -369,11 +377,18 @@ export function ConversationFlowClean() {
             }
           )
           
-          // 标记完成
+          // 标记完成并添加共识检测结果
           updateStreamingMessage(consensusMessage.id, consensusResponse, true)
 
+          // 更新消息并添加共识检测结果
           setConversation((prev) => ({
             ...prev,
+            messages: prev.messages.map(msg => 
+              msg.id === consensusMessage.id 
+                ? { ...msg, consensusResult } 
+                : msg
+            ),
+            finalConsensusResult: consensusResult,
             isComplete: true,
             isProcessing: false,
           }))
@@ -450,6 +465,7 @@ export function ConversationFlowClean() {
       isComplete: false,
       isProcessing: false,
       originalQuestion: "",
+      finalConsensusResult: undefined,
     })
     setStreamingMessages({})
     setActiveMessageId(null)
@@ -592,6 +608,16 @@ export function ConversationFlowClean() {
                 <span className="inline-block w-2 h-5 bg-slate-400 animate-pulse ml-1"></span>
               )}
             </div>
+            
+            {/* 共识答案的问题匹配度分析 */}
+            {message.role === 'consensus' && message.consensusResult && !isStreaming && (
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <ConsensusInsights 
+                  consensusResult={message.consensusResult}
+                  className="bg-white"
+                />
+              </div>
+            )}
           </div>
         )}
       </EnhancedCard>
