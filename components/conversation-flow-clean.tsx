@@ -926,7 +926,7 @@ export function ConversationFlowClean() {
     <MainContainer>
       {/* DISCUSSION标题 - 左上角 */}
       <div className="fixed top-4 left-4 sm:top-6 sm:left-6 p-2.5 sm:p-3 bg-white rounded-md shadow-lg border border-slate-200 z-40">
-        <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-wide">
+        <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-wide leading-none flex items-center h-4 sm:h-5">
           DISCUSSION
         </h1>
       </div>
@@ -936,7 +936,7 @@ export function ConversationFlowClean() {
         href="https://github.com/ct-jyjntc/ai-discussion"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed top-4 right-4 sm:top-6 sm:right-6 p-2.5 sm:p-3 bg-white rounded-md shadow-lg border border-slate-200 hover:border-slate-300 hover:shadow-xl transition-all duration-200 z-40"
+        className="fixed top-4 right-4 sm:top-6 sm:right-6 p-2.5 sm:p-3 bg-white rounded-md shadow-lg border border-slate-200 hover:border-slate-300 hover:shadow-xl transition-all duration-200 z-40 flex items-center"
         title="查看GitHub源码"
       >
         <Github className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
