@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import '../lib/startup-validation' // 导入启动验证
+import '../lib/startup-validation-enhanced' // 导入增强启动验证
 
 export const metadata: Metadata = {
   title: 'DISCUSSION',

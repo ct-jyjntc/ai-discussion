@@ -10,9 +10,11 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out node_modules/.cache",
-    "analyze": "node scripts/analyze-project.js",
     "health-check": "node -e \"require('./lib/startup-validation-enhanced.ts').getStartupValidation().then(r => console.log('Health check completed'))\"",
     "test": "echo 'Tests not implemented yet'",
+    "test:algorithms": "node scripts/algorithm-benchmark.js",
+    "benchmark": "npm run test:algorithms",
+    "benchmark:report": "npm run test:algorithms && echo 'Benchmark report generated'",
     "audit:deps": "npm audit",
     "update:deps": "npm update",
     "precommit": "npm run lint && npm run type-check"
