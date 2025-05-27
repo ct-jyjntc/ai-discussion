@@ -341,7 +341,7 @@ export function ConversationFlowClean() {
       
       // 创建共识检测状态消息（简单提示，不可展开）
       const consensusDetectionMessage = createStreamingMessage("system")
-      updateStreamingMessage(consensusDetectionMessage.id, "正在分析对话内容...", false)
+      updateStreamingMessage(consensusDetectionMessage.id, "正在分析对话内容", false)
       
       try {
         console.log(`开始共识检测 - 第${round}轮`)
