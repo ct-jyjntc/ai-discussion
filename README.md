@@ -1,6 +1,6 @@
-# 🤖 AI 协作对话系统
+# AI Collaborative Discussion System
 
-> 一个创新的多AI协作问答平台，通过两个性格互补的AI助手进行深度讨论，最终达成高质量共识答案
+An enterprise-grade multi-AI collaborative Q&A platform that delivers high-quality consensus solutions for complex problems through deep collaborative discussions between multiple AI assistants.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
@@ -8,60 +8,79 @@
 [![Radix UI](https://img.shields.io/badge/Radix-UI-purple)](https://www.radix-ui.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## 📋 目录
+## Table of Contents
 
-- [特性概览](#-特性概览)
-- [技术栈](#-技术栈)
-- [系统架构](#-系统架构)
-- [快速开始](#-快速开始)
-- [项目结构](#-项目结构)
-- [工作流程](#-工作流程)
-- [环境配置](#-环境配置)
-- [API提供商配置](#-api提供商配置)
-- [功能特点](#-功能特点)
-- [使用指南](#-使用指南)
-- [开发指南](#-开发指南)
-- [性能优化](#-性能优化)
-- [未来规划](#-未来规划)
+- [System Overview](#system-overview)
+- [Core Features](#core-features)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Workflow](#workflow)
+- [Environment Configuration](#environment-configuration)
+- [API Integration](#api-integration)
+- [Available Commands](#available-commands)
+- [Feature Highlights](#feature-highlights)
+- [User Guide](#user-guide)
+- [Development Guide](#development-guide)
+- [Performance Optimization](#performance-optimization)
+- [Roadmap](#roadmap)
+- [Performance Metrics](#performance-metrics)
+- [Contributing](#contributing)
+- [License](#license)
 
-## ✨ 特性概览
+## System Overview
 
-- 🧠 **双AI协作** - 两个具有不同思维模式的AI助手进行深度讨论
-- 📡 **实时流式响应** - 使用SSE技术提供即时对话体验，无需等待完整响应
-- 🎯 **智能共识生成** - 多轮讨论后自动检测共识点并生成综合答案
-- 🔍 **深度问题分析** - 自动分析问题，确定最佳讨论方向
-- 🎨 **现代化UI/UX** - 响应式设计，优雅的用户界面，支持深色/浅色模式
-- 🔒 **安全可靠** - 完善的环境变量验证和错误处理机制
+The AI Collaborative Discussion System is a modern web application built on Next.js 15, specifically designed to handle complex problems. The system provides in-depth analysis and high-quality problem solutions through collaborative mechanisms between multiple AI assistants, combined with real-time streaming technology.
 
-## 🛠 技术栈
+### Core Value Proposition
 
-| 类别 | 技术 | 版本 | 用途 |
-|------|------|------|------|
-| 框架 | Next.js | 15+ | React全栈框架，支持API路由和服务端组件 |
-| 语言 | TypeScript | 5.0+ | 提供类型安全和开发效率 |
-| 样式 | Tailwind CSS | 3.4+ | 原子化CSS框架，提高UI开发效率 |
-| 组件 | Radix UI | Latest | 无样式组件库，提供可访问性和自定义能力 |
-| 图标 | Lucide React | Latest | 现代、一致的图标集 |
-| AI集成 | AI SDK | Latest | 简化AI API集成 |
-| 数据流 | Server-Sent Events | - | 实现流式响应 |
-| Markdown | ReactMarkdown | Latest | 渲染Markdown内容 |
+- **Multi-dimensional Analysis**: Different AI assistants analyze problems from their respective professional perspectives
+- **Collaborative Consensus**: Achieve optimal solutions through multi-round discussions
+- **Real-time Interaction**: Streaming responses based on Server-Sent Events
+- **Intelligent Decision Making**: Automated consensus detection and quality assessment
+- **Enterprise Ready**: Complete type safety and error handling mechanisms
+- **Highly Scalable**: Modular architecture supports flexible expansion
 
-## 🏗 系统架构
+## Core Features
+
+- **Multi-AI Collaboration**: Simultaneous engagement of multiple AI assistants with distinct personalities
+- **Streaming Real-time Responses**: Server-Sent Events implementation for immediate feedback
+- **Consensus Detection**: Automated analysis to determine when agreement is reached
+- **Flexible AI Configuration**: Support for multiple AI providers (OpenAI, Anthropic, custom APIs)
+- **Type-safe Architecture**: Full TypeScript implementation with comprehensive error handling
+- **Responsive Design**: Modern UI with Tailwind CSS and Radix UI components
+- **Quality Assessment**: Built-in mechanisms to evaluate discussion quality and consensus strength
+
+## Technology Stack
+
+| Category | Technology | Version | Purpose |
+|----------|------------|---------|---------|
+| Framework | Next.js | 15+ | React full-stack framework with API routes and server components |
+| Language | TypeScript | 5.0+ | Type safety and development efficiency |
+| Styling | Tailwind CSS | 3.4+ | Atomic CSS framework for improved UI development efficiency |
+| Components | Radix UI | Latest | Unstyled component library providing accessibility and customization |
+| Icons | Lucide React | Latest | Modern, consistent icon set |
+| AI Integration | AI SDK | Latest | Simplified AI API integration |
+| Data Flow | Server-Sent Events | - | Streaming response implementation |
+| Markdown | ReactMarkdown | Latest | Markdown content rendering |
+
+## System Architecture
 
 ```mermaid
 graph TD
-    A[用户界面] --> B[问题分析]
-    B --> C[AI助手A]
-    C --> D[AI助手B]
-    D --> E{共识检测}
-    E -->|未达成共识| C
-    E -->|达成共识| F[生成最终答案]
-    F --> G[展示结果]
+    A[User Interface] --> B[Problem Analysis]
+    B --> C[AI Assistant A]
+    C --> D[AI Assistant B]
+    D --> E{Consensus Detection}
+    E -->|No Consensus| C
+    E -->|Consensus Reached| F[Generate Final Answer]
+    F --> G[Display Results]
 ```
 
-## 🚀 快速开始
+## Quick Start
 
-### 1. 克隆仓库并安装依赖
+### 1. Clone Repository and Install Dependencies
 
 ```bash
 git clone https://github.com/your-username/ai-discussion.git
@@ -69,109 +88,109 @@ cd ai-discussion
 npm install --legacy-peer-deps
 ```
 
-### 2. 环境配置
+### 2. Environment Configuration
 
 ```bash
-# 复制环境变量模板
+# Copy environment variable template
 cp .env.local.example .env.local
-# 编辑 .env.local 添加必要的API密钥
+# Edit .env.local to add necessary API keys
 ```
 
-### 3. 启动开发服务器
+### 3. Start Development Server
 
 ```bash
 npm run dev
-# 应用将在 http://localhost:5010 启动
+# Application will start at http://localhost:5010
 ```
 
-### 4. 构建生产版本
+### 4. Build Production Version
 
 ```bash
 npm run build
 npm start
 ```
 
-## 📂 项目结构
+## Project Structure
 
-```
+```text
 ai-discussion/
-├── app/                      # Next.js 应用路由
-│   ├── api/                  # API 路由
-│   │   └── stream/           # 流式API端点
-│   │       ├── analyze/      # 问题分析
-│   │       ├── discuss/      # AI讨论
-│   │       ├── continue/     # 继续讨论
-│   │       ├── consensus/    # 共识生成
-│   │       ├── consensus-detection/ # 共识检测
-│   │       └── verify-consensus/    # 共识验证
-│   ├── globals.css           # 全局样式
-│   ├── layout.tsx            # 根布局组件
-│   └── page.tsx              # 主页面组件
-├── components/               # 可复用组件
-│   ├── conversation-flow-clean.tsx  # 主对话流程组件
-│   ├── ai-config-panel.tsx   # AI配置面板
-│   ├── ui/                   # UI组件
-│   └── layout/               # 布局组件
-├── lib/                      # 通用工具函数
-│   ├── ai-config.ts          # AI配置管理
-│   ├── env-validation.ts     # 环境变量验证
-│   └── utils.ts              # 实用工具函数
-├── actions/                  # 服务端动作
-│   ├── ai-conversation-v2.ts # 对话逻辑
-│   ├── streaming-actions.ts  # 流式处理逻辑
-│   └── consensus-detection.ts # 共识检测逻辑
-├── types/                    # TypeScript类型定义
-│   └── conversation.ts       # 对话相关类型
-├── styles/                   # 样式组件
-├── public/                   # 静态资源
-├── next.config.mjs           # Next.js配置
-├── tailwind.config.ts        # Tailwind配置
-└── tsconfig.json             # TypeScript配置
+├── app/                      # Next.js application routing
+│   ├── api/                  # API routes
+│   │   └── stream/           # Streaming API endpoints
+│   │       ├── analyze/      # Problem analysis
+│   │       ├── discuss/      # AI discussion
+│   │       ├── continue/     # Continue discussion
+│   │       ├── consensus/    # Consensus generation
+│   │       ├── consensus-detection/ # Consensus detection
+│   │       └── verify-consensus/    # Consensus verification
+│   ├── globals.css           # Global styles
+│   ├── layout.tsx            # Root layout component
+│   └── page.tsx              # Main page component
+├── components/               # Reusable components
+│   ├── conversation-flow-clean.tsx  # Main conversation flow component
+│   ├── ai-config-panel.tsx   # AI configuration panel
+│   ├── ui/                   # UI components
+│   └── layout/               # Layout components
+├── lib/                      # Common utility functions
+│   ├── ai-config.ts          # AI configuration management
+│   ├── env-validation.ts     # Environment variable validation
+│   └── utils.ts              # Utility functions
+├── actions/                  # Server actions
+│   ├── ai-conversation-v2.ts # Conversation logic
+│   ├── streaming-actions.ts  # Streaming processing logic
+│   └── consensus-detection.ts # Consensus detection logic
+├── types/                    # TypeScript type definitions
+│   └── conversation.ts       # Conversation-related types
+├── styles/                   # Style components
+├── public/                   # Static assets
+├── next.config.mjs           # Next.js configuration
+├── tailwind.config.ts        # Tailwind configuration
+└── tsconfig.json             # TypeScript configuration
 ```
 
-## 🔄 工作流程
+## Workflow
 
-1. **问题提交**：用户提交一个需要深入探讨的问题
-2. **问题分析**：系统分析问题并确定讨论方向
-3. **初始讨论**：AI助手A提供第一轮回应
-4. **对话交互**：AI助手B回应并提出不同观点
-5. **深度讨论**：两个AI助手进行多轮讨论，每轮都考虑之前的观点
-6. **共识检测**：系统自动检测讨论是否达成共识
-7. **继续讨论**：如未达成共识，继续深入讨论
-8. **生成共识**：达成共识后，生成最终综合答案
-9. **展示结果**：向用户展示讨论过程和最终答案
+1. **Problem Submission**: User submits a question requiring in-depth exploration
+2. **Problem Analysis**: System analyzes the problem and determines discussion direction
+3. **Initial Discussion**: AI Assistant A provides first-round response
+4. **Interactive Dialogue**: AI Assistant B responds and presents different perspectives
+5. **Deep Discussion**: Two AI assistants engage in multi-round discussions, each considering previous viewpoints
+6. **Consensus Detection**: System automatically detects if discussion has reached consensus
+7. **Continue Discussion**: If no consensus is reached, continue in-depth discussion
+8. **Generate Consensus**: After reaching consensus, generate final comprehensive answer
+9. **Display Results**: Present discussion process and final answer to user
 
-## ⚙️ 环境配置
+## Environment Configuration
 
-必要的环境变量（在`.env.local`中配置）：
+Required environment variables (configure in `.env.local`):
 
 ```env
-# AI助手A配置
+# AI Assistant A Configuration
 AI_A_API_URL=your_api_url_here
 AI_A_API_KEY=your_api_key_here
 AI_A_MODEL=your_model_name_here
-AI_A_NAME="助手A"
+AI_A_NAME="Assistant A"
 AI_A_PERSONALITY="logical,analytical,detail-oriented"
 
-# AI助手B配置
+# AI Assistant B Configuration
 AI_B_API_URL=your_api_url_here
 AI_B_API_KEY=your_api_key_here
 AI_B_MODEL=your_model_name_here
-AI_B_NAME="助手B"
+AI_B_NAME="Assistant B"
 AI_B_PERSONALITY="creative,intuitive,big-picture"
 
-# 共识生成器配置
+# Consensus Generator Configuration
 CONSENSUS_API_URL=your_api_url_here
 CONSENSUS_API_KEY=your_api_key_here
 CONSENSUS_MODEL=your_model_name_here
 
-# 共识检测器配置
+# Consensus Detector Configuration
 CONSENSUS_DETECTOR_API_URL=your_api_url_here
 CONSENSUS_DETECTOR_API_KEY=your_api_key_here
 CONSENSUS_DETECTOR_MODEL=your_model_name_here
 ```
 
-## 🔧 API 提供商配置
+## API Integration
 
 ### OpenAI API
 
@@ -189,7 +208,7 @@ AI_B_API_KEY=sk-ant-your-anthropic-key
 AI_B_MODEL=claude-3-sonnet-20240229
 ```
 
-### 自定义 API（OpenAI 兼容）
+### Custom API (OpenAI Compatible)
 
 ```env
 AI_A_API_URL=http://your-server:port/v1/chat/completions
@@ -197,100 +216,100 @@ AI_A_API_KEY=your-custom-api-key
 AI_A_MODEL=your-custom-model
 ```
 
-## 📋 可用命令
+## Available Commands
 
 ```bash
-# 开发
-npm run dev          # 启动开发服务器
-npm run build        # 构建生产版本
-npm run start        # 启动生产服务器
-npm run lint         # 代码检查
+# Development
+npm run dev          # Start development server
+npm run build        # Build production version
+npm run start        # Start production server
+npm run lint         # Code linting
 ```
 
-## 🎯 功能特点
+## Feature Highlights
 
-### 🤖 AI 协作流程
+### AI Collaboration Process
 
-1. **AI助手A** - 分析型思维，逻辑性强，方法论导向
-2. **AI助手B** - 创造型思维，批判性强，善于质疑
-3. **多轮讨论** - 最多4轮深度讨论
-4. **共识生成** - 综合双方观点生成最终答案
+1. **AI Assistant A** - Analytical thinking, logical reasoning, methodology-oriented
+2. **AI Assistant B** - Creative thinking, critical analysis, questioning-oriented
+3. **Multi-round Discussion** - Up to 4 rounds of in-depth discussion
+4. **Consensus Generation** - Synthesize perspectives from both sides to generate final answer
 
-### 🎨 用户体验
+### User Experience
 
-- ✅ 实时流式对话显示
-- ✅ 智能折叠历史消息
-- ✅ 悬浮输入框设计
-- ✅ 随机问题推荐
-- ✅ 完全响应式布局
+- Real-time streaming conversation display
+- Intelligent collapsing of historical messages
+- Floating input box design
+- Random question recommendations
+- Fully responsive layout
 
-### 🔒 安全特性
+### Security Features
 
-- ✅ 环境变量强制验证
-- ✅ 无硬编码敏感信息
-- ✅ 启动时配置检查
-- ✅ API错误处理机制
+- Mandatory environment variable validation
+- No hardcoded sensitive information
+- Configuration checks at startup
+- API error handling mechanisms
 
-## 📖 使用指南
+## User Guide
 
-1. **选择问题** - 点击推荐问题或输入自定义问题
-2. **开始讨论** - AI助手们自动开始协作讨论
-3. **观看过程** - 实时查看双AI讨论过程
-4. **获得答案** - 最终获得经过深度讨论的共识答案
+1. **Select Question** - Click on recommended questions or input custom questions
+2. **Start Discussion** - AI assistants automatically begin collaborative discussion
+3. **Observe Process** - Watch the real-time dual AI discussion process
+4. **Get Answer** - Receive final consensus answer through in-depth discussion
 
-## 💻 开发指南
+## Development Guide
 
-### 添加新的AI提供商
+### Adding New AI Providers
 
-1. 在`lib/ai-config.ts`中扩展`callAI`和`callAIStreaming`函数
-2. 添加新的环境变量到`.env.local.example`和`lib/env-validation.ts`
-3. 更新`AIConfig`接口以支持新的配置选项
+1. Extend `callAI` and `callAIStreaming` functions in `lib/ai-config.ts`
+2. Add new environment variables to `.env.local.example` and `lib/env-validation.ts`
+3. Update `AIConfig` interface to support new configuration options
 
-### 自定义AI个性
+### Customizing AI Personalities
 
-可以通过修改`.env.local`中的`AI_A_PERSONALITY`和`AI_B_PERSONALITY`值来自定义AI助手的行为特征。
+You can customize AI assistant behavior by modifying `AI_A_PERSONALITY` and `AI_B_PERSONALITY` values in `.env.local`.
 
-### 添加新的UI组件
+### Adding New UI Components
 
-1. 在`components/ui/`目录下创建新组件
-2. 使用Tailwind CSS进行样式设计
-3. 导出并在相应页面中使用组件
+1. Create new components in the `components/ui/` directory
+2. Use Tailwind CSS for styling
+3. Export and use components in appropriate pages
 
-## 🚀 性能优化
+## Performance Optimization
 
-- **流式响应**：使用SSE技术减少首次响应时间
-- **代码分割**：通过Next.js自动代码分割减少初始加载时间
-- **缓存策略**：利用Next.js缓存机制提高API响应速度
-- **懒加载**：非关键组件使用懒加载减少初始包体积
-- **优化图像**：使用Next.js图像优化功能
+- **Streaming Response**: Use SSE technology to reduce first response time
+- **Code Splitting**: Reduce initial load time through Next.js automatic code splitting
+- **Caching Strategy**: Improve API response speed using Next.js caching mechanisms
+- **Lazy Loading**: Use lazy loading for non-critical components to reduce initial bundle size
+- **Image Optimization**: Use Next.js image optimization features
 
-## 🔮 未来规划
+## Roadmap
 
-- [ ] 添加用户认证系统
-- [ ] 实现对话历史存储和恢复
-- [ ] 支持更多AI模型和提供商
-- [ ] 添加对话导出和分享功能
-- [ ] 实现更复杂的共识检测算法
-- [ ] 添加多语言支持
-- [ ] 增强移动端体验
-- [ ] 添加语音输入/输出功能
+- [ ] Add user authentication system
+- [ ] Implement conversation history storage and recovery
+- [ ] Support more AI models and providers
+- [ ] Add conversation export and sharing functionality
+- [ ] Implement more complex consensus detection algorithms
+- [ ] Add multi-language support
+- [ ] Enhance mobile experience
+- [ ] Add voice input/output functionality
 
-## 📊 性能指标
+## Performance Metrics
 
-| 指标 | 目标值 | 当前状态 |
-|------|-------|--------|
-| 首次内容绘制 (FCP) | < 1.0s | ✅ 0.8s |
-| 首次有意义绘制 (FMP) | < 1.5s | ✅ 1.2s |
-| 首次响应时间 | < 2.0s | ✅ 1.5s |
-| 流式响应延迟 | < 500ms | ✅ 300ms |
-| 共识生成时间 | < 5.0s | ⚠️ 4.8s |
+| Metric | Target | Current Status |
+|--------|--------|---------------|
+| First Contentful Paint (FCP) | < 1.0s | ✅ 0.8s |
+| First Meaningful Paint (FMP) | < 1.5s | ✅ 1.2s |
+| First Response Time | < 2.0s | ✅ 1.5s |
+| Streaming Response Latency | < 500ms | ✅ 300ms |
+| Consensus Generation Time | < 5.0s | ⚠️ 4.8s |
 
 ---
 
-## 🙏 贡献指南
+## Contributing
 
-欢迎提交问题报告和拉取请求。对于重大更改，请先开issue讨论您想要更改的内容。
+We welcome issue reports and pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-## 📄 许可证
+## License
 
-本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件。
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
