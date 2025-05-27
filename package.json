@@ -6,7 +6,17 @@
     "dev": "next dev -p 5010",
     "build": "next build",
     "start": "next start -p 5010",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "analyze": "ANALYZE=true npm run build",
+    "analyze": "node scripts/analyze-project.js",
+    "health-check": "node -e \"require('./lib/startup-validation-enhanced.ts').getStartupValidation().then(r => console.log('Health check completed'))\"",
+    "test": "echo 'Tests not implemented yet'",
+    "audit:deps": "npm audit",
+    "update:deps": "npm update",
+    "precommit": "npm run lint && npm run type-check"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.22",

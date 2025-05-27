@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
-import { AI_B_CONFIG, generateSystemPrompt, callAIStreaming } from '@/lib/ai-config'
+import { AI_B_CONFIG, generateEnhancedSystemPrompt, callAIStreaming } from '@/lib/ai-config'
 
 export async function POST(request: NextRequest) {
   try {
     const { question, aiAResponse, round, fullDiscussion } = await request.json()
     
-    const systemPrompt = generateSystemPrompt(AI_B_CONFIG, 'ai_b', round)
+    const systemPrompt = generateEnhancedSystemPrompt(AI_B_CONFIG, 'ai_b', round, question)
     const userPrompt = `用户问题："${question}"
 
 AI助手A的观点：

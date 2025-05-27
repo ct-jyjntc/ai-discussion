@@ -1,6 +1,7 @@
 "use server"
 
 import { CONSENSUS_DETECTOR_CONFIG, generateSystemPrompt, callAI } from "@/lib/ai-config"
+import { analyzeQuestion, generateEnhancedConsensusPrompt } from "@/lib/enhanced-ai-prompts"
 
 export interface ConsensusResult {
   hasConsensus: boolean
@@ -31,6 +32,8 @@ export async function detectConsensus(
   fullDiscussion: string,
   round: number
 ): Promise<ConsensusResult> {
+  // 使用增强的问题分析来生成更针对性的共识检测提示词
+  const enhancedPrompt = generateEnhancedConsensusPrompt(question, fullDiscussion)
   const systemPrompt = generateSystemPrompt(CONSENSUS_DETECTOR_CONFIG, 'consensus_detector', round)
   
   // 根据轮次动态调整分析策略
@@ -39,14 +42,25 @@ export async function detectConsensus(
   // 提取关键对话内容
   const dialogueAnalysis = analyzeDialogueStructure(fullDiscussion)
   
-  const userPrompt = `请分析以下AI助手对话的共识状态：
+  // 分析问题特征以更好地评估答案质量
+  const questionAnalysis = analyzeQuestion(question)
+  
+  const userPrompt = `${enhancedPrompt}
 
-## 对话背景
-**原始问题：** ${question}
-**当前轮次：** 第${round}轮
-**讨论总长度：** ${fullDiscussion.length}字符
-**对话轮数：** ${dialogueAnalysis.totalRounds}轮
-**分析策略：** ${analysisStrategy}
+## 补充分析上下文
+
+**原始问题特征分析：**
+- 问题类型: ${questionAnalysis.questionType}
+- 期望输出: ${questionAnalysis.expectedOutputType}
+- 具体性要求: ${questionAnalysis.specificityLevel}
+- 关键要素: ${questionAnalysis.keyElements.join(', ') || '无'}
+
+**对话背景：**
+- 原始问题: ${question}
+- 当前轮次: 第${round}轮
+- 讨论总长度: ${fullDiscussion.length}字符
+- 对话轮数: ${dialogueAnalysis.totalRounds}轮
+- 分析策略: ${analysisStrategy}
 
 ## 最新对话内容（重点分析）
 ${dialogueAnalysis.recentDialogue}

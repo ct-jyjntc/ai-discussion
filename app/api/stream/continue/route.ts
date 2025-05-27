@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { AI_A_CONFIG, AI_B_CONFIG, generateSystemPrompt, callAIStreaming } from '@/lib/ai-config'
+import { AI_A_CONFIG, AI_B_CONFIG, generateEnhancedSystemPrompt, callAIStreaming } from '@/lib/ai-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     
     const config = isAiA ? AI_A_CONFIG : AI_B_CONFIG
     const role = isAiA ? 'ai_a' : 'ai_b'
-    const systemPrompt = generateSystemPrompt(config, role, round)
+    const systemPrompt = generateEnhancedSystemPrompt(config, role, round, question)
     
     const userPrompt = `用户问题："${question}"
 

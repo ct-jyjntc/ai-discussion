@@ -1,5 +1,11 @@
 // AI配置管理模块
 import { getEnvConfig } from './env-validation'
+import {
+  analyzeQuestion,
+  generateTargetedSystemPrompt,
+  generateQuestionAnalysisPrompt,
+  generateEnhancedConsensusPrompt
+} from './enhanced-ai-prompts'
 
 export interface AIConfig {
   apiUrl: string
@@ -55,7 +61,24 @@ export const AI_B_CONFIG = configs.AI_B_CONFIG
 export const CONSENSUS_CONFIG = configs.CONSENSUS_CONFIG
 export const CONSENSUS_DETECTOR_CONFIG = configs.CONSENSUS_DETECTOR_CONFIG
 
-// 个性化系统提示词生成器
+// 增强的系统提示词生成器 - 支持问题分析
+export function generateEnhancedSystemPrompt(
+  config: AIConfig,
+  role: 'ai_a' | 'ai_b' | 'consensus' | 'consensus_detector',
+  round: number,
+  question?: string
+): string {
+  // 如果提供了问题且不是共识检测器，使用增强提示词
+  if (question && role !== 'consensus_detector') {
+    const questionAnalysis = analyzeQuestion(question)
+    return generateTargetedSystemPrompt(config, role as 'ai_a' | 'ai_b' | 'consensus', round, questionAnalysis)
+  }
+  
+  // 否则使用原有逻辑
+  return generateSystemPrompt(config, role, round)
+}
+
+// 原始系统提示词生成器（保持兼容性）
 export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | 'consensus' | 'consensus_detector', round: number): string {
   const personalities = config.personality.split(',')
   
@@ -103,7 +126,7 @@ export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | '
   }
 
   if (role === 'consensus_detector') {
-    return `你是专业的对话共识分析师。你的任务是智能分析两个AI助手的对话，判断他们是否达成了有意义的共识。
+    return `你是专业的对话共识分析师。你的任务是智能分析两个AI助手的对话，判断他们是否达成了有意义的共识，特别关注答案是否真正解决了用户的具体问题。
 
 ## 分析维度：
 
@@ -166,15 +189,34 @@ export function generateSystemPrompt(config: AIConfig, role: 'ai_a' | 'ai_b' | '
   "solutionCompleteness": "complete/incomplete/unclear"
 }
 
+## 针对性评估标准：
+**答案针对性检查**：
+- 是否直接回答了用户的具体问题，而非泛泛而谈？
+- 是否提供了可操作的具体方法或步骤？
+- 是否包含了必要的技术细节或实施指导？
+- 是否避免了无关的理论发散？
+
+**实用性评估**：
+- 用户能否根据答案解决实际问题？
+- 提供的信息是否具有可验证性？
+- 是否考虑了实际应用场景？
+
+**完整性判断**：
+- 是否覆盖了问题的所有重要方面？
+- 是否提供了足够的背景信息和注意事项？
+- 是否给出了明确的结论或建议？
+
 ## 重要决策原则：
-1. **逻辑一致性**：确保 hasConsensus 与 recommendAction 保持一致
-   - 如果 hasConsensus=true，recommendAction 应该是 "consensus" 
+1. **针对性优先**：即使AI达成一致，如果答案空泛或偏题，也不算有效共识
+2. **实用性门槛**：必须提供具体、可操作的解决方案
+3. **逻辑一致性**：确保 hasConsensus 与 recommendAction 保持一致
+   - 如果 hasConsensus=true，recommendAction 应该是 "consensus"
    - 如果 hasConsensus=false，recommendAction 应该是 "continue" 或 "extend"
-2. **早期阶段谨慎**：前3轮讨论即使有共识迹象，也要慎重评估
-3. **质量门槛**：浅层讨论不应轻易认定为达成共识
-4. **置信度门槛**：只有置信度≥80%且轮次≥3时才建议结束讨论
-5. **问题匹配门槛**：questionMatchScore < 70 或 questionCoverage != "complete" 时，不应认定达成有效共识
-6. **解决方案完整性**：solutionCompleteness != "complete" 时，应该继续讨论直到问题得到充分解答
+4. **早期阶段谨慎**：前3轮讨论即使有共识迹象，也要慎重评估
+5. **质量门槛**：浅层讨论或理论化讨论不应轻易认定为达成共识
+6. **置信度门槛**：只有置信度≥80%且轮次≥3时才建议结束讨论
+7. **问题匹配门槛**：questionMatchScore < 75 或 questionCoverage != "complete" 时，不应认定达成有效共识
+8. **解决方案完整性**：solutionCompleteness != "complete" 时，应该继续讨论直到问题得到充分解答
 
 请基于对话内容进行客观分析，优先确保决策逻辑的一致性。`
   }
